@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vibezz - Poem Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 500px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: bold;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .poem-result {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+            display: none;
+        }
+
+        .poem-text {
+            font-style: italic;
+            font-size: 18px;
+            line-height: 1.6;
+            color: #333;
+            white-space: pre-line;
+        }
+
+        .error {
+            color: #e74c3c;
+            background: #ffeaea;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+
+        .loading {
+            text-align: center;
+            color: #667eea;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>✨ Vibezz</h1>
+        <form id="poemForm">
+            
+            <div class="form-group">
+                <label for="theme">Theme:</label>
+                <input type="text" id="theme" name="theme" placeholder="e.g., love, nature, friendship" required>
+            </div>
+
+            <div class="form-group">
+                <label for="mood">Mood:</label>
+                <select id="mood" name="mood" required>
+                    <option value="">Select a mood</option>
+                    <option value="happy">Happy</option>
+                    <option value="romantic">Romantic</option>
+                    <option value="melancholic">Melancholic</option>
+                    <option value="inspirational">Inspirational</option>
+                    <option value="playful">Playful</option>
+                    <option value="peaceful">Peaceful</option>
+                    <option value="nostalgic">Nostalgic</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="recipient">For:</label>
+                <input type="text" id="recipient" name="for" placeholder="e.g., my love, my friend, myself" required>
+            </div>
+
+            <button type="submit" class="btn" id="generateBtn">Generate Vibezz</button>
+        </form>
+
+        <div id="loading" class="loading" style="display: none;">
+            Generating your Vibezz... ✍️
+        </div>
+
+        <div id="error" class="error" style="display: none;"></div>
+
+        <div id="poemResult" class="poem-result">
+            <h3>Your Vibezz:</h3>
+            <div id="poemText" class="poem-text"></div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('poemForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const data = {
+                theme: formData.get('theme'),
+                mood: formData.get('mood'),
+                for: formData.get('for')
+            };
+
+            // Show loading state
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('generateBtn').disabled = true;
+            document.getElementById('generateBtn').textContent = 'Generating...';
+            document.getElementById('error').style.display = 'none';
+            document.getElementById('poemResult').style.display = 'none';
+
+            try {
+                const response = await fetch('/get-vibe/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                // Check if response is JSON
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    throw new Error('Server returned non-JSON response');
+                }
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    document.getElementById('poemText').textContent = result.poem;
+                    document.getElementById('poemResult').style.display = 'block';
+                } else {
+                    throw new Error(result.error || 'Failed to generate poem');
+                }
+            } catch (error) {
+                document.getElementById('error').textContent = 'Error: ' + error.message;
+                document.getElementById('error').style.display = 'block';
+            } finally {
+                // Reset loading state
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('generateBtn').disabled = false;
+                document.getElementById('generateBtn').textContent = 'Generate Vibezz';
+            }
+        });
+    </script>
+</body>
+</html>
