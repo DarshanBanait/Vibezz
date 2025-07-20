@@ -197,6 +197,11 @@
                     document.getElementById('poemText').textContent = result.poem;
                     document.getElementById('poemResult').style.display = 'block';
                 } else {
+                    // Handle rate limiting specifically
+                    if (response.status === 429) {
+                        const retryAfter = result.retry_after || 60;
+                        throw new Error(`Too many requests. Please wait ${retryAfter} seconds before trying again.`);
+                    }
                     throw new Error(result.error || 'Failed to generate poem');
                 }
             } catch (error) {

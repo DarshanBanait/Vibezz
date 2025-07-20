@@ -1,9 +1,13 @@
 from django.http import JsonResponse
 import json
 import requests
+import hashlib
+import time
 from django.shortcuts import render
 from django.conf import settings
 from django.utils.html import escape
+from django.core.cache import cache
+from django.utils import timezone
 import re
 from django.views.decorators.csrf import csrf_exempt
 from .models import PoemGeneration
@@ -12,14 +16,44 @@ def home(request):
     """Render the main page"""
     return render(request, 'index.html')
 
+def check_rate_limit(request):
+    """
+    Rate limiting by IP address
+    Allows 5 requests per minute per IP
+    """
+    client_ip = request.META.get('REMOTE_ADDR', 'unknown')
+    if client_ip == 'unknown':
+        client_ip = request.META.get('HTTP_X_FORWARDED_FOR', 'unknown')
+    
+    # Create a hash of the IP for cache key
+    cache_key = f'rate_limit_{hashlib.md5(client_ip.encode()).hexdigest()}'
+    
+    # Get current request count for this IP
+    current_requests = cache.get(cache_key, 0)
+    
+    # Check if limit exceeded
+    if current_requests >= 5:  # 5 requests per minute
+        return False
+    
+    # Increment request count with 60 second expiry
+    cache.set(cache_key, current_requests + 1, 60)
+    return True
+
 @csrf_exempt
 def get_vibe(request):
     """
     Get Vibe - Generates a poem using Gemini API
-    Params: theme, style, tone
+    Params: theme, mood, for
     """
     if request.method != 'POST':
         return JsonResponse({'error': 'Invalid request method'}, status=405)
+    
+    # Check rate limit
+    if not check_rate_limit(request):
+        return JsonResponse({
+            'error': 'Rate limit exceeded. Please wait a moment before trying again.',
+            'retry_after': 60
+        }, status=429)
     
     try:
         data = json.loads(request.body)

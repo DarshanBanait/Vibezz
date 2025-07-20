@@ -81,11 +81,12 @@ AI-powered poem generator that creates personalized verses using Google Gemini. 
 - ✅ Error handling without information disclosure
 - ✅ Request timeout protection
 - ✅ Malicious pattern detection
+- ✅ **Rate limiting** - 5 requests per minute per IP address
 
 ## TODO
 
 ### Immediate Security Improvements
-- [ ] **Add rate limiting** - Prevent API abuse and spam
+- [x] **Add rate limiting** - ✅ Implemented (5 requests/minute per IP)
 - [ ] **Add CSRF protection** - Secure form submissions
 
 ### Features in the Pipeline
